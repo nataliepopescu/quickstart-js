@@ -55,7 +55,7 @@ PrivateApp.prototype.initRouter = function() {
   this.router
     .on({
       '/': function() {
-        that.updateFilterQuery(that.filters);
+        that.updateQuery(that.filters);
       }
     })
     .on({

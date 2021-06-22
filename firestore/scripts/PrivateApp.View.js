@@ -270,7 +270,7 @@ PrivateApp.prototype.initFilterDialog = function() {
 
   var that = this;
   this.dialogs.filter.listen('MDCDialog:accept', function() {
-    that.updateFilterQuery(that.filters);
+    that.updateQuery(that.filters);
   });
 
   var dialog = document.querySelector('aside');
@@ -349,7 +349,7 @@ PrivateApp.prototype.initFilterDialog = function() {
   });
 };
 
-PrivateApp.prototype.updateFilterQuery = function(filters) {
+PrivateApp.prototype.updateQuery = function(filters) {
   var query_description = '';
 
   if (filters.category !== '') {
