@@ -1,6 +1,6 @@
 {
-  "name": "FriendlyEats",
-  "short_name": "FriendlyEats",
+  "name": "PrivateApp",
+  "short_name": "PrivateApp",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

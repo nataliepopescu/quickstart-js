@@ -17,7 +17,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="description" content="Learn how to use the Firebase platform on the Web">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FriendlyEats</title>
+  <title>PrivateApp</title>
 
   <!-- Disable tap highlight on IE -->
   <meta name="msapplication-tap-highlight" content="no">
@@ -28,13 +28,13 @@
 
   <!-- Add to homescreen for Chrome on Android -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="application-name" content="FriendlyEats">
+  <meta name="application-name" content="PrivateApp">
   <meta name="theme-color" content="#4285F4">
 
   <!-- Add to homescreen for Safari on iOS -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="FriendlyEats">
+  <meta name="apple-mobile-web-app-title" content="PrivateApp">
   <meta name="apple-mobile-web-app-status-bar-style" content="#4285F4">
 
   <!-- Tile icon for Win8 -->
@@ -64,7 +64,7 @@
         <div id="title" class="mdc-toolbar__row mdc-layout-grid">
           <section class="mdc-toolbar__section mdc-toolbar__section--align-start">
             <span class="material-icons mdc-toolbar__icon--menu">restaurant</span>
-            <span class="mdc-toolbar__title">FriendlyEats</span>
+            <span class="mdc-toolbar__title">PrivateApp</span>
           </section>
         </div>
         <div id="section-header" data-fir-if="hasSectionHeader"></div>
@@ -80,6 +80,25 @@
   <div hidden class="template" id="main">
     <div id="message-cards-container" class="mdc-layout-grid">
       <div id="cards" class="mdc-layout-grid__inner"></div>
+    </div>
+  </div>
+
+  <div hidden class="template" id="no-account">
+    <div id="guy-container" class="mdc-toolbar-fixed-adjust">
+      <img class="guy" src="/images/guy_fireats.png" />
+      <br />
+      <input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="email" name="email" placeholder="Email"/>
+      &nbsp;&nbsp;&nbsp;
+      <input class="mdl-textfield__input" style="display:inline;width:auto;" type="password" id="password" name="password" placeholder="Password"/>
+      <br/><br/>
+      <a class="mdc-button" id="login">
+        Sign In
+      </a>
+      <br />
+      <br />
+      <a class="mdc-button" id="create-account">
+        Sign Up
+      </a>
     </div>
   </div>
 
@@ -115,7 +134,7 @@
     <div id="guy-container" class="mdc-toolbar-fixed-adjust">
       <img class="guy" src="/images/guy_fireats.png" />
       <div class="text">
-        There are no results for your those filters!
+        There are no results for those filters!
       </div>
     </div>
   </div>
@@ -124,7 +143,7 @@
     <div id="filter" class="mdc-toolbar mdc-layout-grid">
       <div id="show-filters" >
         <div id="active-filters">
-          <i class="material-icons">filter_list</i>
+          <i class="material-icons">tune</i>
           You're seeing <b data-fir-content="filter_description"></b>
         </div>
       </div>
@@ -217,9 +236,15 @@
       <span data-fir-if-not="price">Any Price</span>
       <b data-fir-content="price"></b>
     </li>
-    <li id="show-page-sort" class="mdc-list-item" data-mdc-auto-init="MDCRipple">
-      <i class="material-icons">sort</i>
-      <b data-fir-content="sort"></b>
+    <li id="show-page-rated" class="mdc-list-item" data-mdc-auto-init="MDCRipple">
+      <i class="material-icons">star_border</i>
+      <span data-fir-if-not="rated">Rated</span>
+      <b data-fir-content="rated"></b>
+    </li>
+    <li id="show-page-rating-order" class="mdc-list-item" data-mdc-auto-init="MDCRipple">
+      <i class="material-icons">star</i>
+      <span data-fir-if-not="rating_order">Decreasing</span>
+      <b data-fir-content="rating_order"></b>
     </li>
   </ul>
 
@@ -297,22 +322,29 @@
           <button type="button" class="mdc-button mdc-dialog__footer__button back">Back</button>
         </footer>
       </div>
-      <div class="page" id="page-sort">
+      <div class="page" id="page-rated">
         <header class="mdc-dialog__header">
-          <i class="material-icons">sort</i>
+          <i class="material-icons">star_border</i>
           <h2 id="mdc-dialog-with-list-label" class="mdc-dialog__header__title">
-            Sort By
+            Rated
           </h2>
         </header>
         <section class="mdc-dialog__body mdc-dialog__body--scrollable">
-          <ul class="mdc-list">
-            <li class="mdc-list-item" data-mdc-auto-init="MDCRipple">
-              Rating
-            </li>
-            <li class="mdc-list-item" data-mdc-auto-init="MDCRipple">
-              Reviews
-            </li>
-          </ul>
+          <div id="rated-list"></div>
+        </section>
+        <footer class="mdc-dialog__footer">
+          <button type="button" class="mdc-button mdc-dialog__footer__button back">Back</button>
+        </footer>
+      </div>
+      <div class="page" id="page-rating-order">
+        <header class="mdc-dialog__header">
+          <i class="material-icons">star</i>
+          <h2 id="mdc-dialog-with-list-label" class="mdc-dialog__header__title">
+            Rating
+          </h2>
+        </header>
+        <section class="mdc-dialog__body mdc-dialog__body--scrollable">
+          <div id="rating-order-list"></div>
         </section>
         <footer class="mdc-dialog__footer">
           <button type="button" class="mdc-button mdc-dialog__footer__button back">Back</button>
@@ -349,16 +381,17 @@
   </aside>
 </div>
 
-<script src="/__/firebase/8.6.8/firebase-app.js"></script>
-<script src="/__/firebase/8.6.8/firebase-auth.js"></script>
-<script src="/__/firebase/8.6.8/firebase-firestore.js"></script>
+<script src="/__/firebase/8.6.2/firebase-app.js"></script>
+<script src="/__/firebase/8.6.2/firebase-auth.js"></script>
+<script src="/__/firebase/8.6.2/firebase-firestore.js"></script>
 <script src="/__/firebase/init.js"></script>
 
 <script src="//unpkg.com/navigo@6"></script>
 
-<script src="/scripts/FriendlyEats.js"></script>
-<script src="/scripts/FriendlyEats.View.js"></script>
-<script src="/scripts/FriendlyEats.Mock.js"></script>
-<script src="/scripts/FriendlyEats.Data.js"></script>
+<script src="/scripts/PrivateApp.js"></script>
+<script src="/scripts/PrivateApp.View.js"></script>
+<script src="/scripts/PrivateApp.Mock.js"></script>
+<script src="/scripts/PrivateApp.Data.js"></script>
+<script src="/scripts/PrivateApp.Login.js"></script>
 </body>
 </html>

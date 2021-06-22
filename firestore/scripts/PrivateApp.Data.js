@@ -15,12 +15,12 @@
  */
 'use strict';
 
-FriendlyEats.prototype.addRestaurant = function (data) {
+PrivateApp.prototype.addRestaurant = function (data) {
   const collection = firebase.firestore().collection('restaurants');
   return collection.add(data);
 };
 
-FriendlyEats.prototype.getAllRestaurants = function (render) {
+PrivateApp.prototype.getAllRestaurants = function (render) {
   const query = firebase.firestore()
     .collection('restaurants')
     .orderBy('avgRating', 'desc')
@@ -28,7 +28,7 @@ FriendlyEats.prototype.getAllRestaurants = function (render) {
   this.getDocumentsInQuery(query, render);
 };
 
-FriendlyEats.prototype.getDocumentsInQuery = function (query, render) {
+PrivateApp.prototype.getDocumentsInQuery = function (query, render) {
   query.onSnapshot((snapshot) => {
     if (!snapshot.size) {
       return render();
@@ -42,11 +42,11 @@ FriendlyEats.prototype.getDocumentsInQuery = function (query, render) {
   });
 };
 
-FriendlyEats.prototype.getRestaurant = function (id) {
+PrivateApp.prototype.getRestaurant = function (id) {
   return firebase.firestore().collection('restaurants').doc(id).get();
 };
 
-FriendlyEats.prototype.getFilteredRestaurants = function (filters, render) {
+PrivateApp.prototype.getFilteredRestaurants = function (filters, render) {
   let query = firebase.firestore().collection('restaurants');
 
   if (filters.category !== 'Any') {
@@ -61,16 +61,22 @@ FriendlyEats.prototype.getFilteredRestaurants = function (filters, render) {
     query = query.where('price', '==', filters.price.length);
   }
 
-  if (filters.sort === 'Rating') {
+  if (filters.rated === 'Rated') {
+    query = query.where('avgRating', '>', 0);
+  } else if (filters.rated === 'Unrated') {
+    query = query.where('avgRating', '<', 1);
+  }
+
+  if (filters.rating_order === 'Increasing') {
+    query = query.orderBy('avgRating');
+  } else if (filters.rating_order === 'Decreasing') {
     query = query.orderBy('avgRating', 'desc');
-  } else if (filters.sort === 'Reviews') {
-    query = query.orderBy('numRatings', 'desc');
   }
 
   this.getDocumentsInQuery(query, render);
 };
 
-FriendlyEats.prototype.addRating = function (restaurantID, rating) {
+PrivateApp.prototype.addRating = function (restaurantID, rating) {
   const collection = firebase.firestore().collection('restaurants');
   const document = collection.doc(restaurantID);
   const newRatingDocument = document.collection('ratings').doc();

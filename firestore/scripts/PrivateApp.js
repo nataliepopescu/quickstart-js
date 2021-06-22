@@ -16,24 +16,25 @@
 'use strict';
 
 /**
- * Initializes the FriendlyEats app.
+ * Initializes the PrivateApp app.
  */
-function FriendlyEats() { // eslint-disable-line no-redeclare
+function PrivateApp() { // eslint-disable-line no-redeclare
   this.filters = {
     city: '',
     price: '',
     category: '',
-    sort: 'Rating'
-  };
+    rated: 'Rated',
+    rating_order: 'Decreasing'
+  }
 
   this.dialogs = {};
 
   var that = this;
 
   firebase.firestore().enablePersistence()
-    .then(function() {
-      return firebase.auth().signInAnonymously();
-    })
+    //.then(function() {
+    //  return firebase.auth().signInAnonymously();
+    //})
     .then(function() {
       that.initTemplates();
       that.initRouter();
@@ -45,16 +46,21 @@ function FriendlyEats() { // eslint-disable-line no-redeclare
 }
 
 /**
- * Initializes the router for the FriendlyEats app.
+ * Initializes the router for the PrivateApp app.
  */
-FriendlyEats.prototype.initRouter = function() {
+PrivateApp.prototype.initRouter = function() {
   this.router = new Navigo();
 
   var that = this;
   this.router
     .on({
       '/': function() {
-        that.updateQuery(that.filters);
+        that.updateFilterQuery(that.filters);
+      }
+    })
+    .on({
+      '/login': function() {
+        that.viewLogin();
       }
     })
     .on({
@@ -76,29 +82,32 @@ FriendlyEats.prototype.initRouter = function() {
     .collection('restaurants')
     .limit(1)
     .onSnapshot(function(snapshot) {
-      if (snapshot.empty) {
+      if (!firebase.auth().currentUser) {
+        that.router.navigate('/login');
+      } else if (snapshot.empty) {
         that.router.navigate('/setup');
       }
     });
 };
 
-FriendlyEats.prototype.getCleanPath = function(dirtyPath) {
+PrivateApp.prototype.getCleanPath = function(dirtyPath) {
   if (dirtyPath.startsWith('/index.html')) {
-    return dirtyPath.split('/').slice(1).join('/');
+    newPath = dirtyPath.split('/').slice(1).join('/');
+    return newPath;
   } else {
     return dirtyPath;
   }
 };
 
-FriendlyEats.prototype.getFirebaseConfig = function() {
+PrivateApp.prototype.getFirebaseConfig = function() {
   return firebase.app().options;
 };
 
-FriendlyEats.prototype.getRandomItem = function(arr) {
+PrivateApp.prototype.getRandomItem = function(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 };
 
-FriendlyEats.prototype.data = {
+PrivateApp.prototype.data = {
   words: [
     'Bar',
     'Fire',
@@ -198,5 +207,5 @@ FriendlyEats.prototype.data = {
 };
 
 window.onload = function() {
-  window.app = new FriendlyEats();
+  window.app = new PrivateApp();
 };

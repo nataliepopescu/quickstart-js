@@ -48,11 +48,11 @@
    padding-right: 16px;
  }
 
- .mdc-dialog__body {padding-bottom: 7px;}
+ .mdc-dialog__body {padding-bottom: 10px;}
 
  .back {float: left;}
 
- #site-header, #filter {background-color: #3367D6;}
+ #site-header, #filter {background-color: #b03a8c;} /* HERE #3367D6;} */
 
  #generic-header button {color: black;}
 

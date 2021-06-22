@@ -15,9 +15,9 @@
  */
 'use strict';
 
-FriendlyEats.ID_CONSTANT = 'fir-';
+PrivateApp.ID_CONSTANT = 'fir-';
 
-FriendlyEats.prototype.initTemplates = function() {
+PrivateApp.prototype.initTemplates = function() {
   this.templates = {};
 
   var that = this;
@@ -26,11 +26,11 @@ FriendlyEats.prototype.initTemplates = function() {
   });
 };
 
-FriendlyEats.prototype.viewHome = function() {
+PrivateApp.prototype.viewHome = function() {
   this.getAllRestaurants();
 };
 
-FriendlyEats.prototype.viewList = function(filters, filter_description) {
+PrivateApp.prototype.viewList = function(filters, filter_description) {
   if (!filter_description) {
     filter_description = 'any type of food with any price in any city.';
   }
@@ -105,12 +105,13 @@ FriendlyEats.prototype.viewList = function(filters, filter_description) {
     }
   };
 
-  if (filters.city || filters.category || filters.price || filters.sort !== 'Rating' ) {
+  if (filters.city || filters.category || filters.price || filters.rated || filters.rating_order) {
     this.getFilteredRestaurants({
       city: filters.city || 'Any',
       category: filters.category || 'Any',
       price: filters.price || 'Any',
-      sort: filters.sort
+      rated: filters.rated || 'Either',
+      rating_order: filters.rating_order || 'Decreasing'
     }, renderResults);
   } else {
     this.getAllRestaurants(renderResults);
@@ -122,7 +123,67 @@ FriendlyEats.prototype.viewList = function(filters, filter_description) {
   mdc.autoInit();
 };
 
-FriendlyEats.prototype.viewSetup = function() {
+PrivateApp.prototype.viewLogin = function() {
+  var headerEl = this.renderTemplate('header-base', {
+    hasSectionHeader: false
+  });
+
+  var config = this.getFirebaseConfig();
+  var noAccountEl = this.renderTemplate('no-account', config);
+
+  var buttonLogin = noAccountEl.querySelector('#login');
+  var buttonCreateAccount = noAccountEl.querySelector('#create-account');
+  var loggingIn = false;
+  var creatingAccount = false;
+
+  var that = this;
+
+  buttonLogin.addEventListener('click', function(event) {
+    if (loggingIn) {
+      return;
+    }
+
+    loggingIn = true;
+
+    event.target.style.opacity = '0.4';
+    event.target.innerText = 'Please wait...';
+
+    that.loginUser(); //.then(function() {
+    that.rerender();
+    //});
+  });
+
+  buttonCreateAccount.addEventListener('click', function(event) {
+    if (creatingAccount) {
+      return;
+    }
+
+    creatingAccount = true;
+
+    event.target.style.opacity = '0.4';
+    event.target.innerText = 'Please wait...';
+
+    that.createAccount(); //.then(function() {
+    that.rerender();
+    //});
+  });
+
+  this.replaceElement(document.querySelector('.header'), headerEl);
+  this.replaceElement(document.querySelector('main'), noAccountEl);
+
+  /*firebase
+    .firestore()
+    .collection('restaurants')
+    .limit(1)
+    .onSnapshot(function(snapshot) {
+      console.log(snapshot);
+      if (snapshot.size && !loggingIn && !creatingAccount) {
+        that.router.navigate('/');
+      }
+    });*/
+};
+
+PrivateApp.prototype.viewSetup = function() {
   var headerEl = this.renderTemplate('header-base', {
     hasSectionHeader: false
   });
@@ -163,7 +224,7 @@ FriendlyEats.prototype.viewSetup = function() {
     });
 };
 
-FriendlyEats.prototype.initReviewDialog = function() {
+PrivateApp.prototype.initReviewDialog = function() {
   var dialog = document.querySelector('#dialog-add-review');
   this.dialogs.add_review = new mdc.dialog.MDCDialog(dialog);
 
@@ -175,7 +236,7 @@ FriendlyEats.prototype.initReviewDialog = function() {
     that.addRating(id, {
       rating: rating,
       text: dialog.querySelector('#text').value,
-      userName: 'Anonymous (Web)',
+      userName: 'Self',
       timestamp: new Date(),
       userId: firebase.auth().currentUser.uid
     }).then(function() {
@@ -203,13 +264,13 @@ FriendlyEats.prototype.initReviewDialog = function() {
   });
 };
 
-FriendlyEats.prototype.initFilterDialog = function() {
+PrivateApp.prototype.initFilterDialog = function() {
   // TODO: Reset filter dialog to init state on close.
   this.dialogs.filter = new mdc.dialog.MDCDialog(document.querySelector('#dialog-filter-all'));
 
   var that = this;
   this.dialogs.filter.listen('MDCDialog:accept', function() {
-    that.updateQuery(that.filters);
+    that.updateFilterQuery(that.filters);
   });
 
   var dialog = document.querySelector('aside');
@@ -223,6 +284,16 @@ FriendlyEats.prototype.initFilterDialog = function() {
   this.replaceElement(
     dialog.querySelector('#city-list'),
     that.renderTemplate('item-list', { items: ['Any'].concat(that.data.cities) })
+  );
+
+  this.replaceElement(
+    dialog.querySelector('#rated-list'),
+    that.renderTemplate('item-list', { items: ['Rated', 'Unrated', 'Either'] })
+  );
+
+  this.replaceElement(
+    dialog.querySelector('#rating-order-list'),
+    that.renderTemplate('item-list', { items: ['Decreasing', 'Increasing'] })
   );
 
   var renderAllList = function() {
@@ -258,6 +329,9 @@ FriendlyEats.prototype.initFilterDialog = function() {
     if (type === 'all') {
       return;
     }
+    if (type === 'rating') {
+      type = 'rating_order';
+    }
 
     sel.querySelectorAll('.mdc-list-item').forEach(function(el) {
       el.addEventListener('click', function() {
@@ -275,13 +349,25 @@ FriendlyEats.prototype.initFilterDialog = function() {
   });
 };
 
-FriendlyEats.prototype.updateQuery = function(filters) {
+PrivateApp.prototype.updateFilterQuery = function(filters) {
   var query_description = '';
 
   if (filters.category !== '') {
-    query_description += filters.category + ' places';
+    if (filters.rated == 'Rated') {
+      query_description += 'rated ' + filters.category + ' places';
+    } else if (filters.rated == 'Unrated') {
+      query_description += 'unrated ' + filters.category + ' places';
+    } else {
+      query_description += 'both rated and unrated ' + filters.category + ' places';
+    }
   } else {
-    query_description += 'any restaurant';
+    if (filters.rated == 'Rated') {
+      query_description += 'rated restaurants';
+    } else if (filters.rated == 'Unrated') {
+      query_description += 'unrated restaurants';
+    } else {
+      query_description += 'both rated and unrated restaurants';
+    }
   }
 
   if (filters.city !== '') {
@@ -296,16 +382,16 @@ FriendlyEats.prototype.updateQuery = function(filters) {
     query_description += ' with any price';
   }
 
-  if (filters.sort === 'Rating') {
-    query_description += ' sorted by rating';
-  } else if (filters.sort === 'Reviews') {
-    query_description += ' sorted by # of reviews';
+  if (filters.rating_order === 'Decreasing') {
+    query_description += ', sorted by descending rating';
+  } else {
+    query_description += ', sorted by ascending rating';
   }
 
   this.viewList(filters, query_description);
 };
 
-FriendlyEats.prototype.viewRestaurant = function(id) {
+PrivateApp.prototype.viewRestaurant = function(id) {
   var sectionHeaderEl;
   var that = this;
 
@@ -358,6 +444,7 @@ FriendlyEats.prototype.viewRestaurant = function(id) {
       that.replaceElement(document.querySelector('main'), mainEl);
     })
     .then(function() {
+      console.log("update page links?")
       that.router.updatePageLinks();
     })
     .catch(function(err) {
@@ -365,7 +452,7 @@ FriendlyEats.prototype.viewRestaurant = function(id) {
     });
 };
 
-FriendlyEats.prototype.renderTemplate = function(id, data) {
+PrivateApp.prototype.renderTemplate = function(id, data) {
   var template = this.templates[id];
   var el = template.cloneNode(true);
   el.removeAttribute('hidden');
@@ -380,7 +467,7 @@ FriendlyEats.prototype.renderTemplate = function(id, data) {
   return el;
 };
 
-FriendlyEats.prototype.render = function(el, data) {
+PrivateApp.prototype.render = function(el, data) {
   if (!data) {
     return;
   }
@@ -475,18 +562,18 @@ FriendlyEats.prototype.render = function(el, data) {
   });
 };
 
-FriendlyEats.prototype.useModifier = function(el, selector, modifier) {
+PrivateApp.prototype.useModifier = function(el, selector, modifier) {
   el.querySelectorAll('[' + selector + ']').forEach(modifier);
 };
 
-FriendlyEats.prototype.getDeepItem = function(obj, path) {
+PrivateApp.prototype.getDeepItem = function(obj, path) {
   path.split('/').forEach(function(chunk) {
     obj = obj[chunk];
   });
   return obj;
 };
 
-FriendlyEats.prototype.renderRating = function(rating) {
+PrivateApp.prototype.renderRating = function(rating) {
   var el = this.renderTemplate('rating', {});
   for (var r = 0; r < 5; r += 1) {
     var star;
@@ -500,7 +587,7 @@ FriendlyEats.prototype.renderRating = function(rating) {
   return el;
 };
 
-FriendlyEats.prototype.renderPrice = function(price) {
+PrivateApp.prototype.renderPrice = function(price) {
   var el = this.renderTemplate('price', {});
   for (var r = 0; r < price; r += 1) {
     el.append('$');
@@ -508,11 +595,12 @@ FriendlyEats.prototype.renderPrice = function(price) {
   return el;
 };
 
-FriendlyEats.prototype.replaceElement = function(parent, content) {
+PrivateApp.prototype.replaceElement = function(parent, content) {
   parent.innerHTML = '';
   parent.append(content);
 };
 
-FriendlyEats.prototype.rerender = function() {
+PrivateApp.prototype.rerender = function() {
+  console.log(document.location.pathname);
   this.router.navigate(document.location.pathname + '?' + new Date().getTime());
 };
